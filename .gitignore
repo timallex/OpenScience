@@ -1,0 +1,7 @@
+   .venv/
+   .idea/
+   __pycache__/
+   *.csv
+   themis_data/
+   omni_data/
+   pydata/
