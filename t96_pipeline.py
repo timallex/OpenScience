@@ -17,8 +17,8 @@ from T96EquationHelper import (
 )
 import T96plotsHelper
 from T96TraceLineHelper import trace_field_line,process_trace_results
-from T96WaveHelper import getBWVals, select_wave_values
-from T96inputHelper import getInputs
+from T96WaveHelper import get_bw_values, select_wave_values
+from T96inputHelper import get_inputs
 from T96DataHelper import prepare_trace_seed, load_required_data
 
 
@@ -97,7 +97,7 @@ def run_pipeline(
         plot_enabled=plot_enabled
     )
 
-    _, bw_values, omega_values = getBWVals(
+    _, measured_bw_values, measured_omega_values = get_bw_values(
         probe,
         seed_time_epoch,
         time_range,
@@ -113,8 +113,8 @@ def run_pipeline(
 
     if plot_enabled:
         T96plotsHelper.omegaVsBws(
-            omega_values,
-            bw_values,
+            measured_omega_values,
+            measured_bw_values,
             0,
             25000
         )
@@ -138,21 +138,21 @@ def run_pipeline(
         bmag_full=bmag_full,
         plot_enabled=plot_enabled
     )
-    print("time: ", seed_time)
+    #print("time: ", seed_time)
     # GLOBAL VALS
 
     l_shell = get_data('tha_pos_lshell').y[0]
-    b_0 = df.loc[np.isclose(df['s'], 0.0), 'Bmag'].iloc[0]
+    equatorial_bmag = df.loc[np.isclose(df['s'], 0.0), 'Bmag'].iloc[0]
 
     f_ce_eq, omega_ce_eq, n_pe_eq, gamma = calculate_global_values(
         l_shell=l_shell,
-        equatorial_bmag=b_0,
+        equatorial_bmag=equatorial_bmag,
         energy_kev=energy_kev
     )
 
     global_values = {
         'l_shell': l_shell,
-        'B_0': b_0,
+        'B_0': equatorial_bmag,
         'f_ce_eq': f_ce_eq,
         'omega_ce_eq': omega_ce_eq,
         'n_pe_eq': n_pe_eq,
@@ -162,8 +162,8 @@ def run_pipeline(
     omega_ratios = OMEGA_RATIOS
 
     omega_values, bw_values = select_wave_values(
-        measured_omega_values=omega_values,
-        measured_bw_values=bw_values,
+        measured_omega_values=measured_omega_values,
+        measured_bw_values=measured_bw_values,
         omega_ce_eq=omega_ce_eq,
         omega_ratios=omega_ratios
     )
@@ -238,7 +238,7 @@ def main():
         theta,
         max_step,
         output_csv
-    ) = getInputs(False)
+    ) = get_inputs(False)
 
 
     return run_pipeline(

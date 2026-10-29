@@ -5,7 +5,7 @@ from tkinter import ttk, filedialog
 from tkcalendar import DateEntry
 
 
-def getInputs(auto):
+def get_inputs(auto):
     """Retrieve pipeline inputs using default values or user input.
 
     Parameters
@@ -33,16 +33,16 @@ def getInputs(auto):
     """
 
     if auto:
-        trange = ['2019-09-29', '2019-09-30']
-        maxstep = .05
+        time_range = ['2019-09-29', '2019-09-30']
+        max_step = .05
         probe = 'd'
-        time = dt.datetime(2019,9,29,14,58,0,tzinfo=dt.UTC)
+        selected_time = dt.datetime(2019,9,29,14,58,0,tzinfo=dt.UTC)
         theta = 0  # rad
-        E = 200  # keV
+        energy_kev = 200  # keV
 
         output_csv = None
 
-        return probe,trange,time, E, theta, maxstep, output_csv
+        return probe,time_range,selected_time, energy_kev, theta, max_step, output_csv
 
 
     else:
@@ -54,13 +54,13 @@ def getInputs(auto):
         start_date = dt.datetime.strptime(inputs["date"], "%Y-%m-%d").date()
         end_date = start_date + dt.timedelta(days=1)
 
-        trange = [start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")]
+        time_range = [start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")]
 
         date = dt.datetime(start_date.year, start_date.month, start_date.day, inputs["hour"],inputs["minute"],inputs["second"],tzinfo=dt.UTC)
 
         csv_location = inputs["CSV"]
 
-        return inputs["probe"], trange, date, inputs["E"],inputs["theta"], inputs["maxstep"], csv_location
+        return inputs["probe"], time_range, date, inputs["E"],inputs["theta"], inputs["maxstep"], csv_location
 
 
 

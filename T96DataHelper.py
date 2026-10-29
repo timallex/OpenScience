@@ -180,3 +180,4 @@ def prepare_trace_seed(probe, selected_time_epoch, plot_enabled=False):
     pyspedas.set_coords('seed_pos_gsm', 'GSM')
 
     return seed_time_epoch, seed_parameters
+

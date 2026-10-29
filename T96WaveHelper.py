@@ -6,78 +6,78 @@ import numpy as np
 
 
 
-def getBWVals(probe, selectedTime, trange, noUpdate, plotBool,timeW1,dataW1,freqs,timeW2,dataW2,eW2):
+def get_bw_values(probe, seed_time_epoch, time_range, no_update, plot_enabled, scm2_times, scm2_psd, frequencies_hz, scm3_times, scm3_psd, scm3_frequencies):
     """Calculate wave magnetic field amplitudes from THEMIS spectral data.
 
     Parameters
     ----------
     probe : str
         THEMIS probe identifier: "a", "b", "c", "d", or "e".
-    selectedTime : float
+    seed_time_epoch : float
         Selected time as a Unix timestamp in seconds.
-    trange : list of str
+    time_range : list of str
         Start and end dates for data retrieval.
-    noUpdate : bool
+    no_update : bool
         Whether to avoid downloading updated data.
-    plotBool : bool
+    plot_enabled : bool
         Whether to display the wave spectral data plot.
-    timeW1 : array-like
+    scm2_times : array-like
         Timestamps for the first magnetic field spectral dataset.
-    dataW1 : array-like
+    scm2_psd : array-like
         Power spectral density values for the first dataset in nT^2/Hz.
-    freqs : array-like
+    frequencies_hz : array-like
         Center frequencies of the spectral bins in Hz.
-    timeW2 : array-like
+    scm3_times : array-like
         Timestamps for the second magnetic field spectral dataset.
-    dataW2 : array-like
+    scm3_psd : array-like
         Power spectral density values for the second dataset in nT^2/Hz.
-    eW2 : array-like
+    scm3_frequencies : array-like
         Frequency values for the second spectral dataset in Hz.
 
     Returns
     -------
-    freqs : numpy.ndarray
-        Center frequencies of the spectral bins in Hz.
-    Bw : numpy.ndarray
-        Wave magnetic field amplitudes in nT.
-    omegas : numpy.ndarray
-        Wave angular frequencies in rad/s.
+       frequencies_hz : numpy.ndarray
+           Center frequencies of the spectral bins in Hz.
+       measured_bw_values : numpy.ndarray
+           Wave magnetic field amplitudes in nT.
+       measured_omega_values : numpy.ndarray
+           Wave angular frequencies in rad/s.
     """
 
 
-    print(len(timeW1),len(timeW2),len(dataW2),len(eW2), len(dataW2[0]))
+    print(len(scm2_times), len(scm3_times), len(scm3_psd), len(scm3_frequencies), len(scm3_psd[0]))
 
-    print(timeW1)
+    print(scm2_times)
 
-    idx_timeW1 = np.argmin(np.abs(np.array(timeW1) - selectedTime))
+    idx_timeW1 = np.argmin(np.abs(np.array(scm2_times) - seed_time_epoch))
 
     print(idx_timeW1)
-    print("Closest time:", timeW1[idx_timeW1], selectedTime,(timeW1[idx_timeW1] - selectedTime))
-    print(dataW2[idx_timeW1])
-    print(len(dataW2[idx_timeW1]))
+    print("Closest time:", scm2_times[idx_timeW1], seed_time_epoch, (scm2_times[idx_timeW1] - seed_time_epoch))
+    print(scm3_psd[idx_timeW1])
+    print(len(scm3_psd[idx_timeW1]))
 
-    dataW = np.array(dataW1[idx_timeW1]) + np.array(dataW2[idx_timeW1])
+    dataW = np.array(scm2_psd[idx_timeW1]) + np.array(scm3_psd[idx_timeW1])
 
 
     print(dataW)
 
-    print(freqs,eW2)
+    print(frequencies_hz, scm3_frequencies)
 
 
     # freqs = the 32 frequency centers, like [4, 20, 36, ..., 3836]
-    freqs = np.array(freqs, dtype=float)
+    frequencies_hz = np.array(frequencies_hz, dtype=float)
 
     # make 33 edges for 32 bins
-    edges = np.zeros(len(freqs) + 1)
+    edges = np.zeros(len(frequencies_hz) + 1)
 
     # first bin starts at 0 Hz
     edges[0] = 0
 
     # middle edges are halfway between neighboring frequency centers
-    edges[1:-1] = 0.5 * (freqs[:-1] + freqs[1:])
+    edges[1:-1] = 0.5 * (frequencies_hz[:-1] + frequencies_hz[1:])
 
     # last bin extends past the final center by half the last spacing
-    edges[-1] = freqs[-1] + 0.5 * (freqs[-1] - freqs[-2])
+    edges[-1] = frequencies_hz[-1] + 0.5 * (frequencies_hz[-1] - frequencies_hz[-2])
 
     # bin sizes
     bin_widths = np.diff(edges)
@@ -85,14 +85,14 @@ def getBWVals(probe, selectedTime, trange, noUpdate, plotBool,timeW1,dataW1,freq
     print(bin_widths)
 
     # convert PSD to Bw
-    Bw = np.sqrt(dataW * bin_widths)
+    measured_bw_values = np.sqrt(dataW * bin_widths)
 
 
-    omegas = freqs * np.pi * 2
+    measured_omega_values = frequencies_hz * np.pi * 2
 
-    if plotBool: tplot(f'th{probe}_fff_32_scm2')
+    if plot_enabled: tplot(f'th{probe}_fff_32_scm2')
 
-    return freqs, Bw, omegas
+    return frequencies_hz, measured_bw_values, measured_omega_values
 
 
 def select_wave_values(
