@@ -26,10 +26,12 @@ pip install pyspedas geopack spacepy numpy pandas matplotlib tkcalendar
 python t96_pipeline.py
 ```
 
-An input window opens, already filled in with an example case (THEMIS-D, 2019-09-29 at 14:58 UTC). 
+An input window opens, already filled in with an example case (THEMIS-D, 2019-09-29 at 14:58 UTC).
 Change any values you like, optionally click **Browse...** to choose where to save the results as a CSV (leave it blank to skip saving), 
 then click **Run Pipeline**. The first run may take longer due to the necessary downloading of data.
 
+If the required data aren't available for the chosen date and time, the program stops with an error such as
+"Required data are missing for the selected time". Try a different date, time or probe.
 
 ## 4. Optional: run from your own script
  
@@ -59,7 +61,7 @@ full_df, global_values = run_pipeline(
   - `MLAT`: magnetic latitude (deg)
   - `omega`: wave frequency (rad/s)
   - `alpha_eq`: resonant equatorial pitch angle (deg)
-  - `S`: inhomogeneity factor. |S| < 1 means nonlinear interaction is possible; |S| ≫ 1 means quasi-linear.
+  - `S`: Omura's S factor
 
 - Since 'full_df' contains the data for each wave frequency, the file contains 4 trace lines
 
@@ -85,7 +87,7 @@ full_df, global_values = run_pipeline(
 The pipeline runs these in order. Some steps read data that an earlier step stored inside PySPEDAS; this is noted under **Needs**.
 
 ### `get_inputs(auto)` — `T96inputHelper.py`
-Gets the inputs from a pop-up window 
+Gets the inputs from a pop-up window (`auto=False`) or uses preset example values (`auto=True`).
 - **Returns:** `probe`, `time_range`, `selected_time`, `energy_kev`, `theta`, `max_step`, `output_csv`, ready to pass to `run_pipeline`
 
 ### `run_pipeline(probe, time_range, selected_time, energy_kev, theta, max_step=0.05, plot_enabled=False, no_update=False, output_csv=None)` — `t96_pipeline.py`
@@ -110,7 +112,7 @@ Downloads THEMIS position, THEMIS SCM wave spectra and OMNI data.
 ### `prepare_trace_seed(probe, selected_time_epoch, plot_enabled=False)` — `T96DataHelper.py`
 Builds the T96 model inputs and picks the spacecraft position closest to the chosen time.
 - **Inputs:** `probe`, `selected_time_epoch` (Unix seconds), `plot_enabled`
-- **Returns:** `seed_time_epoch` (Unix seconds), `seed_parameters` (T96 parameters)
+- **Returns:** `seed_time_epoch` (Unix seconds), `seed_parameters` (T96 model inputs at that time: solar wind pressure, Dst, IMF By and Bz)
 - **Needs:** data loaded by `load_required_data`
 
 ### `get_bw_values(probe, seed_time_epoch, time_range, no_update, plot_enabled, scm2_times, scm2_psd, frequencies_hz, scm3_times, scm3_psd, scm3_frequencies)` — `T96WaveHelper.py`
@@ -122,7 +124,7 @@ Turns the two SCM spectra at the chosen time into wave amplitudes.
 Traces the T96 field line from the spacecraft to the equator and both ionospheres.
 - **Inputs:** `seed_parameters` from `prepare_trace_seed`, `max_step` (R_E)
 - **Returns:** `s_full` (km from equator), `r_full_gsm` (km), `b_full` (nT), `bmag_full` (nT)
-- **Needs:** the seed position stored by `prepare_trace_seed`
+- **Needs:** the seed position `seed_pos_gsm` stored by `prepare_trace_seed`
 
 ### `process_trace_results(s_full, r_full_gsm, b_full, bmag_full, plot_enabled=False)` — `T96TraceLineHelper.py`
 Computes magnetic latitude and L-shell and builds the field-line table.
@@ -132,7 +134,7 @@ Computes magnetic latitude and L-shell and builds the field-line table.
 
 ### `calculate_global_values(l_shell, equatorial_bmag, energy_kev)` — `T96EquationHelper.py`
 Computes values that are constant along the field line.
-- **Inputs:** `l_shell`, `equatorial_bmag` (nT, field strength at the equator), `energy_kev`
+- **Inputs:** `l_shell`, `equatorial_bmag` (nT), `energy_kev`
 - **Returns:** `f_ce_eq` (Hz), `omega_ce_eq` (rad/s), `n_pe_eq` (cm⁻³), `gamma`
 
 ### `select_wave_values(measured_omega_values, measured_bw_values, omega_ce_eq, omega_ratios)` — `T96WaveHelper.py`
@@ -141,12 +143,12 @@ Picks wave frequencies as fractions of the equatorial cyclotron frequency and in
 - **Returns:** `omega_values` (rad/s), `bw_values` (nT)
 
 ### `add_trace_equation_values(df, n_pe_eq)` — `T96EquationHelper.py`
-Adds cyclotron and plasma frequencies at each field-line point.
+Calculates values that depend on field line position but not omega or Bw.
 - **Inputs:** `df` from `process_trace_results`, `n_pe_eq` from `calculate_global_values`
 - **Returns:** `df` with added columns `f_ce`, `omega_ce`, `dOce_ds`, `f_pe`, `omega_pe`
 
 ### `calculate_wave_results(df, omega_values, bw_values, theta, gamma, omega_ce_eq)` — `T96EquationHelper.py`
-Computes the resonance quantities and S for each wave frequency.
+Computes values that depend on Bw and/or omega, including S, for each wave frequency.
 - **Inputs:** `df` from `add_trace_equation_values`; `omega_values`, `bw_values` from `select_wave_values`; `gamma`, `omega_ce_eq` from `calculate_global_values`; `theta` (rad)
 - **Returns:** `full_df`, one copy of the field line per frequency with added columns `k`, `N`, `alpha`, `alpha_eq`, `v_perp`, `v_R`, `S`
 
